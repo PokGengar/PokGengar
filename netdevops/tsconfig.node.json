@@ -1,0 +1,17 @@
+{
+  "extends": "@tsconfig/node18/tsconfig.json", // 继承 Node.js 18 的标准 TypeScript 配置
+
+  "include": [ // 指定需要编译的配置文件
+    "vite.config.*",      // Vite 构建工具配置文件
+    "vitest.config.*",    // Vitest 测试框架配置文件
+    "cypress.config.*",   // Cypress 测试框架配置文件
+    "playwright.config.*" // Playwright 测试框架配置文件
+  ],
+
+  "compilerOptions": { // TypeScript 编译器选项
+    "composite": true, // 启用项目编译，支持增量编译
+    "module": "ESNext", // 使用最新的 ECMAScript 模块语法
+    "moduleResolution": "Bundler", // 使用打包工具的模块解析策略
+    "types": ["node"] // 仅包含 Node.js 的类型声明
+  }
+}
