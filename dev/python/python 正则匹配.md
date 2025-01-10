@@ -18,7 +18,7 @@ print str.startswith( 'this' )
 print str.startswith( 'is', 2, 4 )
 print str.startswith( 'this', 2, 4 )
 ```
-执行代码结果如下：
+运行代码结果如下：
 ```
 True
 True
