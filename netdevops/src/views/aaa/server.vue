@@ -30,6 +30,19 @@
           </el-tag>
         </template>
       </el-table-column>
+
+      <el-table-column label="SSH登录" width="120">
+        <template #default="scope">
+          <el-button 
+            type="primary" 
+            size="small" 
+            @click="handleSSHLogin(scope.row)"
+            :disabled="scope.row.status !== '运行中'">
+            SSH登录
+          </el-button>
+        </template>
+      </el-table-column>
+
       <el-table-column label="操作" width="180">
         <template #default="scope">
           <el-button type="primary" link @click="handleEdit(scope.row)">编辑</el-button>
@@ -258,6 +271,21 @@ const confirmViewPassword = () => {
   } else {
     ElMessage.error('管理员密码错误')
   }
+}
+
+// 添加简单的加密函数
+const encrypt = (text) => {
+  return btoa(encodeURIComponent(text)) // 使用 Base64 编码
+}
+
+// SSH登录处理函数
+const handleSSHLogin = (row: any) => {
+  const encryptedData = encrypt(JSON.stringify({
+    username: row.username,
+    password: row.password
+  }))
+  const url = `/ssh-terminal?host=${row.ip}&port=${row.port}&data=${encryptedData}`
+  window.open(url, '_blank')
 }
 
 onMounted(() => {

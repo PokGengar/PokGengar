@@ -41,7 +41,7 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true },
         children: [
           {
-            path: '',  // 空路径匹配 /index/aaa
+            path: '',
             name: 'AAAHome',
             component: () => import('../views/aaa/home.vue'),
             meta: { requiresAuth: true }
@@ -59,6 +59,53 @@ const routes: RouteRecordRaw[] = [
             meta: { requiresAuth: true }
           }
         ]
+      },
+      // 新增网络设备管理路由配置
+      {
+        path: 'network',
+        component: () => import('../views/network/index.vue'),
+        meta: { requiresAuth: true },
+        children: [
+          {
+            path: '',
+            name: 'NetworkHome',
+            component: () => import('../views/network/modules.vue'),
+            meta: { requiresAuth: true }
+          },
+          {
+            path: 'headquarters',
+            name: 'NetworkHeadquarters',
+            component: () => import('../views/network/devices.vue'),
+            meta: { requiresAuth: true },
+            props: { moduleId: 1 }  // 总部园区模块ID
+          },
+          {
+            path: 'overseas',
+            name: 'NetworkOverseas',
+            component: () => import('../views/network/devices.vue'),
+            meta: { requiresAuth: true },
+            props: { moduleId: 2 }  // 海外大区办公室模块ID
+          },
+          {
+            path: 'domestic-office',
+            name: 'NetworkDomesticOffice',
+            component: () => import('../views/network/devices.vue'),
+            meta: { requiresAuth: true },
+            props: { moduleId: 3 }  // 国内大区办公室模块ID
+          },
+          {
+            path: 'domestic-warehouse',
+            name: 'NetworkDomesticWarehouse',
+            component: () => import('../views/network/devices.vue'),
+            meta: { requiresAuth: true },
+            props: { moduleId: 4 }  // 国内仓库模块ID
+          }
+        ]
+      },
+      {
+        path: '/ssh-terminal',
+        name: 'SSHTerminal',
+        component: () => import('../views/aaa/SSHTerminal.vue')
       }
     ]
   },

@@ -28,6 +28,10 @@
           <el-menu-item index="/index/aaa/server">AAA服务器</el-menu-item>
           <el-menu-item index="/index/aaa/log">AAA日志</el-menu-item>
         </el-sub-menu>
+        <el-menu-item index="/index/network">
+          <el-icon><Monitor /></el-icon>
+          <template #title>网络设备管理</template>
+        </el-menu-item>
       </el-menu>
     </div>
     <div class="main-container">
@@ -60,7 +64,8 @@ import {
   User, 
   Setting, 
   ArrowDown,
-  HomeFilled
+  HomeFilled,
+  Monitor 
 } from "@element-plus/icons-vue"
 
 const route = useRoute()

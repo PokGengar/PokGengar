@@ -1,22 +1,16 @@
 {
-  "extends": "@vue/tsconfig/tsconfig.dom.json", // 继承 Vue 官方提供的 DOM 环境 TypeScript 配置
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
 
-  "include": ["env.d.ts", "src/**/*", "src/**/*.vue"], // 指定需要编译的文件
-                                                      // - env.d.ts：环境声明文件
-                                                      // - src/**/*：src 目录下所有文件
-                                                      // - src/**/*.vue：所有 Vue 单文件组件
+  "include": ["env.d.ts", "src/**/*", "src/**/*.vue"], 
+  "exclude": ["src/**/__tests__/*"],
 
-  "exclude": ["src/**/__tests__/*"], // 排除测试文件目录
-
-  "compilerOptions": { // TypeScript 编译器选项
-    "composite": true, // 启用项目编译，支持增量编译
-    "baseUrl": ".", // 设置基准目录为当前目录
-    "paths": { // 路径别名配置
-      "@/*": ["./src/*"] // 将 @ 映射到 src 目录，方便导入模块
+  "compilerOptions": { 
+    "composite": true, 
+    "baseUrl": ".", 
+    "paths": { 
+      "@/*": ["./src/*"] 
     },
-    "types": ["node", "vite/client"], // 需要包含的类型声明文件
-                                     // - node：Node.js 的类型声明
-                                     // - vite/client：Vite 客户端的类型声明
-    "moduleResolution": "node" // 使用 Node.js 风格的模块解析策略
+    "types": ["node", "vite/client"], 
+    "moduleResolution": "node" 
   }
 }

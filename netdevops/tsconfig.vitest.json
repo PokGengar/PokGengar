@@ -1,21 +1,21 @@
 {
-  "extends": "./tsconfig.app.json", // 继承应用程序的 TypeScript 配置
+  "extends": "./tsconfig.app.json",
 
-  "include": [ // 指定需要包含的文件
-    "src/**/__tests__/*", // 包含所有测试文件目录
-    "env.d.ts"           // 包含环境声明文件
+  "include": [
+    "src/**/__tests__/*",
+    "env.d.ts"
   ],
 
-  "exclude": [], // 空数组，不排除任何文件
+  "exclude": [],
 
-  "compilerOptions": { // TypeScript 编译器选项
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vitest.tsbuildinfo", // 增量编译信息文件的存储位置
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vitest.tsbuildinfo",
 
-    "lib": [], // 空数组，不引入额外的类型声明库
+    "lib": [],
 
-    "types": [ // 需要包含的类型声明
-      "node",  // Node.js 的类型声明
-      "jsdom"  // JSDOM（浏览器环境模拟）的类型声明
+    "types": [
+      "node",
+      "jsdom"
     ]
   }
 }

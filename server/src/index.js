@@ -8,6 +8,10 @@ import { exec } from 'child_process'
 import util from 'util'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { createServer } from 'http'
+import { WebSocketServer } from 'ws'
+import { Client } from 'ssh2'
+import networkRoutes from './routes/network.js'
 
 const execPromise = util.promisify(exec)
 const __filename = fileURLToPath(import.meta.url)
@@ -17,11 +21,130 @@ dotenv.config()
 
 const app = express()
 app.use(cors({
-  origin: 'http://30.118.110.15:5173', // 替换为你的前端地址
+  origin: 'http://30.118.110.15:5173',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type']
+  allowedHeaders: ['Content-Type'],
+  credentials: true
 }))
 app.use(express.json())
+app.use('/api/network', networkRoutes)
+
+// 创建 HTTP 服务器
+const server = createServer(app)
+
+// 设置 WebSocket 服务器
+const wss = new WebSocketServer({
+  server,
+  verifyClient: (info) => {
+    // 允许所有连接
+    return true;
+  }
+})
+
+// WebSocket SSH 处理
+wss.on('connection', (ws, req) => {
+  console.log('New SSH client connected from:', req.socket.remoteAddress)
+  let sshClient = null
+
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message.toString())
+      console.log('Received message type:', data.type)
+
+      if (data.type === 'connect') {
+        console.log('Attempting to connect to SSH server:', {
+          host: data.host,
+          port: data.port || 22,
+          username: data.username
+        })
+        sshClient = new Client()
+        
+        sshClient.on('ready', () => {
+          console.log('SSH connection established successfully')
+          sshClient.shell((err, stream) => {
+            if (err) {
+              console.error('Shell error:', err)
+              ws.send('\r\n*** SSH Shell 错误: ' + err.message + '\r\n')
+              return
+            }
+            console.log('Shell session created')
+
+            stream.on('data', (data) => {
+              try {
+                ws.send(data.toString('utf-8'))
+              } catch (e) {
+                console.error('Error sending data to WebSocket:', e)
+              }
+            })
+
+            stream.on('close', () => {
+              console.log('SSH Stream closed')
+              ws.close()
+            })
+
+            stream.on('error', (err) => {
+              console.error('SSH stream error:', err)
+              ws.send('\r\n*** SSH Stream 错误:' + err.message + '\r\n')
+            })
+
+            // 处理终端输入
+            ws.on('message', (message) => {
+              try {
+                const data = JSON.parse(message.toString())
+                if (data.type === 'data') {
+                  stream.write(data.data)
+                }
+              } catch (e) {
+                console.error('Error handling terminal input:', e)
+              }
+            })
+          })
+        })
+
+        sshClient.on('error', (err) => {
+          console.error('SSH connection error:', err)
+          ws.send('\r\n*** SSH 连接错误: ' + err.message + '\r\n')
+        })
+
+        sshClient.on('end', () => {
+          console.log('SSH connection ended')
+        })
+
+        sshClient.on('close', () => {
+          console.log('SSH connection closed')
+        })
+        try {
+          sshClient.connect({
+            host: data.host,
+            port: data.port || 22,
+            username: data.username,
+            password: data.password,
+            readyTimeout: 20000,
+            keepaliveInterval: 10000,
+            debug: (msg) => console.log('SSH Debug:', msg)
+          })
+        } catch (error) {
+          console.error('Error connecting to SSH server:', error)
+          ws.send('\r\n*** SSH 连接错误: ' + error.message + '\r\n')
+        }
+      }
+    } catch (error) {
+      console.error('Error handling WebSocket message:', error)
+      ws.send('\r\n*** 错误: ' + error.message + '\r\n')
+    }
+  })
+
+  ws.on('error', (error) => {
+    console.error('WebSocket error:', error)
+  })
+
+  ws.on('close', () => {
+    console.log('WebSocket connection closed')
+    if (sshClient) {
+      sshClient.end()
+    }
+  })
+})
 
 // 数据库连接配置
 const pool = mysql.createPool({
@@ -65,7 +188,6 @@ async function pingHost(ip) {
 app.get('/api/aaa-servers', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM aaa_servers')
-    // 使用对称加密，这样我们可以解密密码，并进行 ping 检测
     const decryptedRows = await Promise.all(rows.map(async row => {
       const isReachable = await pingHost(row.ip)
       return {
@@ -85,28 +207,26 @@ app.get('/api/aaa-servers', async (req, res) => {
 app.post('/api/aaa-servers', async (req, res) => {
   try {
     const { ip, region, username, password, status } = req.body
-    console.log('收到的数据:', { ip, region, username, password, status }) // 添加日志
+    console.log('收到的数据:', { ip, region, username, password, status })
     
-    // 进行 ping 检测
     const isReachable = await pingHost(ip)
     const serverStatus = isReachable ? '运行中' : '不可用'
-
-    // 使用对称加密存储密码
     const encryptedPassword = encryptPassword(password)
 
     const [result] = await pool.query(
       'INSERT INTO aaa_servers (ip, region, username, password, status) VALUES (?, ?, ?, ?, ?)',
       [ip, region, username, encryptedPassword, status]
     )
-    res.json({ id: result.insertId,
-               ip,
-               region,
-               username,
-               password, // 返回明文密码
-               status
+    res.json({ 
+      id: result.insertId,
+      ip,
+      region,
+      username,
+      password,
+      status
     })
   } catch (error) {
-    console.error('添加服务器错误:', error) // 添加错误日志
+    console.error('添加服务器错误:', error)
     res.status(500).json({ error: '添加服务器失败' })
   }
 })
@@ -115,24 +235,22 @@ app.post('/api/aaa-servers', async (req, res) => {
 app.put('/api/aaa-servers/:id', async (req, res) => {
   try {
     const { ip, region, username, password, status } = req.body
-
-    // 进行 ping 检测
     const isReachable = await pingHost(ip)
     const serverStatus = isReachable ? '运行中' : '不可用'
-
-    // 加密新密码
     const encryptedPassword = encryptPassword(password)
 
     await pool.query(
       'UPDATE aaa_servers SET ip = ?, region = ?, username = ?, password = ?, status = ? WHERE id = ?',
       [ip, region, username, encryptedPassword, status, req.params.id]
     )
-    res.json({ id: req.params.id,
-               ip,
-               region,
-               username,
-               password,
-               status})
+    res.json({
+      id: req.params.id,
+      ip,
+      region,
+      username,
+      password,
+      status
+    })
   } catch (error) {
     console.error('更新服务器错误:', error)
     res.status(500).json({ error: '更新服务器失败' })
@@ -176,6 +294,7 @@ app.get('/api/aaa-logs', async (req, res) => {
 })
 
 const PORT = process.env.PORT || 3000
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`)
+  console.log(`WebSocket server is ready for SSH connections`)
 })
