@@ -1,0 +1,6 @@
+Ruckus ZD1200 Tacacs+
+参考链接
+https://support.ruckuswireless.com/articles/000003050
+需要注意的细节：
+● service 必须是 zd-login；
+● CLI配置：tacplus-service zd-login；
