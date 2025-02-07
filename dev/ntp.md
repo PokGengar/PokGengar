@@ -167,8 +167,10 @@ System clock synchronized: yes
           RTC in local TZ: no
 ```
 #### 网络设备配置NTP服务器
+ntp server 192.168.0.30 source Loopback 0 prefer
+ntp server 192.168.1.30 source Loopback 0
 #### NTP服务器检查状态
-chronyc sources
+chronyc sources：检查上游服务器状态
 ```
 MS Name/IP address         Stratum Poll Reach LastRx Last sample               
 ===============================================================================
@@ -203,7 +205,7 @@ __LastRx：__
 __Last sample：__
 - -44us 实际时间偏移，[-57us] 测量时的偏移，+/- 11ms 估计误差范围
 
-chronyc clients 
+chronyc clients：检查客户端状态
 ```
 Hostname                      NTP   Drop Int IntL Last     Cmd   Drop Int  Last
 ===============================================================================
@@ -229,3 +231,64 @@ __重要说明：__
 - 这表明有一个客户端（10.x.x.x）正在正常同步时间
 - 没有任何请求被丢弃，表示连接状况良好
 - 该客户端只进行NTP同步，没有发送任何命令请求
+
+#### 网络设备检查状态
+show ntp server
+```
+ntp-server                                source    keyid        prefer  version  status     
+----------------------------------------  --------  -----------  ------  -------  -----------
+192.168.1.30                               Lo0       None         FALSE   4        reject       
+192.168.0.30                               Lo0       None         TRUE    4        select       
+```
+
+show ntp status 
+```
+Clock is synchronized, stratum 3, reference is 192.168.0.30
+nominal freq is 250.000 Hz, actual freq is 250.000 Hz, precision is 2**19
+reference time is EB4FF42E.F6A01F88 (02:53:34.000 UTC Fri, Feb 7, 2025)
+clock offset is -0.00016 sec, root delay is 0.00742 sec
+root dispersion is 0.01616 msec, peer dispersion is 0.00404 msec
+system poll interval is 64, last update was 51 sec ago
+system time(GMT) is EB4FF463.176A24DF (02:54:27.000 GMT Fri, Feb 7, 2025)
+```
+参数说明：
+- 同步状态
+  - synchronized: 表示时钟已同步
+  - stratum 3: 本设备的层级（上游服务器应该是stratum 2）
+  - reference: 当前参考时间源的IP地址
+- 频率信息
+  - nominal freq: 标称频率（理论值）
+  - actual freq: 实际频率（当前值）
+  - precision: 时钟精度（2的19次方分之一秒）
+- 参考时间
+  - 最后一次从参考源接收到时间的时间戳
+  - 包括16进制值和人类可读格式
+- 偏移和延迟
+  - clock offset: 本地时钟与参考时钟的时间差（-0.22毫秒）
+  - root delay: 到主参考时钟的往返延迟（7.21毫秒）
+- 色散值
+  - root dispersion: 到主参考时钟的最大误差（0.01368毫秒）
+  - peer dispersion: 与直接上游服务器的最大误差（0.00168毫秒）
+- 轮询信息
+  - poll interval: 轮询间隔（64秒）
+  - last update: 距离上次更新的时间（48秒前）
+- 系统时间
+  - 当前系统时间的时间戳
+  - 包括16进制值和人类可读格式
+
+状态评估：
+- 时钟同步状态良好（已同步）
+- 时间偏移很小（-0.22ms）
+- 延迟较低（7.21ms）
+- 色散值较小，表示时间精度好
+- 正常的轮询间隔（64秒）
+- 最近有更新（48秒前）
+
+这些参数表明该交换机的NTP服务运行状况良好，时间同步精确度高。
+
+问题：reference time 和 system time 为什么不一致？
+
+Reference Time（参考时间）：这是最后一次从NTP服务器成功同步时的时间戳，表示上一次成功获取参考时间的时刻。
+
+System Time（系统时间）：这是显示命令时的当前系统时间，表示执行命令的实时时刻。
+![image](https://github.com/user-attachments/assets/b57dd24e-82bf-4b8c-8c0b-60be8a80c775)
