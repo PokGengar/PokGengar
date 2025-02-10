@@ -35,7 +35,7 @@ chrony is already the newest version (4.3-2+deb12u1).
 0 upgraded, 0 newly installed, 0 to remove and 5 not upgraded.
 ```
 #### 配置文件
-/etc/chrony/chrony.conf
+主NTP服务器：/etc/chrony/chrony.conf
 ```
 # Use Alibaba NTP server
 # Public NTP
@@ -43,7 +43,7 @@ chrony is already the newest version (4.3-2+deb12u1).
 
 # === 上游时间源 ===
 # 阿里云内网 NTP
-server ntp.cloud.aliyuncs.com minpoll 4 maxpoll 10 iburst
+server ntp.cloud.aliyuncs.com minpoll 4 maxpoll 10 iburst prefer
 # 阿里云公网 NTP
 server ntp1.aliyun.com minpoll 4 maxpoll 10 iburst
 server ntp2.aliyun.com minpoll 4 maxpoll 10 iburst
@@ -64,12 +64,13 @@ leapsectz right/UTC
 # Allow NTP client access from local network.
 # 允许的客户端网段
 allow <client ip subnet>
+allow <ntp peer ip subnet>
 
 # 设置本地层级
 local stratum 8
 
 # 允许备用服务器作为对等体
-peer <slave ntp server ip>
+peer <slave ntp server ip> iburst prefer
 
 # Listen for commands only on localhost.
 bindcmdaddress 127.0.0.1
@@ -92,6 +93,65 @@ log measurements statistics tracking
 # NTP响应速率限制
 ratelimit interval 3 burst 8
 ```
+备NTP服务器：：/etc/chrony/chrony.conf
+```
+# Use Alibaba NTP server
+# Public NTP
+# Alicloud NTP
+
+# === 上游时间源 ===
+# 阿里云内网 NTP
+server ntp.cloud.aliyuncs.com minpoll 4 maxpoll 10 iburst prefer
+# 阿里云公网 NTP
+server ntp1.aliyun.com minpoll 4 maxpoll 10 iburst
+server ntp2.aliyun.com minpoll 4 maxpoll 10 iburst
+
+# Ignore stratum in source selection.
+stratumweight 0.05
+
+# Enable kernel RTC synchronization.
+rtcsync
+
+# In first three updates step the system clock instead of slew
+# if the adjustment is larger than 10 seconds.
+makestep 10 3
+
+# 设置时区数据库路径
+leapsectz right/UTC
+
+# Allow NTP client access from local network.
+# 允许的客户端网段
+allow <client ip subnet>
+allow <ntp peer ip subnet>
+
+# 设置本地层级
+local stratum 9
+
+# 允许主用服务器作为对等体
+peer <master ntp server ip> iburst prefer
+
+# Listen for commands only on localhost.
+bindcmdaddress 127.0.0.1
+bindcmdaddress ::1
+
+# Disable logging of client accesses.
+# === 安全设置 ===
+# 禁止客户端修改服务器时间
+# noclientlog
+
+# Send a message to syslog if a clock adjustment is larger than 0.5 seconds.
+logchange 0.5
+
+# === 基本配置 ===
+# Record the rate at which the system clock gains/losses time
+driftfile /var/lib/chrony/chrony.drift
+logdir /var/log/chrony
+log measurements statistics tracking
+
+# NTP响应速率限制
+ratelimit interval 3 burst 8
+```
+
 开启 noclientlog 报错：
 ```
 systemctl status chrony
@@ -170,15 +230,39 @@ System clock synchronized: yes
 ntp server 192.168.0.30 source Loopback 0 prefer
 ntp server 192.168.1.30 source Loopback 0
 #### NTP服务器检查状态
-chronyc sources：检查上游服务器状态
+chronyc sources -v：检查上游服务器状态（合并展示主备NTP服务器的结果）
 ```
+  .-- Source mode  '^' = server, '=' = peer, '#' = local clock.
+ / .- Source state '*' = current best, '+' = combined, '-' = not combined,
+| /             'x' = may be in error, '~' = too variable, '?' = unusable.
+||                                                 .- xxxx [ yyyy ] +/- zzzz
+||      Reachability register (octal) -.           |  xxxx = adjusted offset,
+||      Log2(Polling interval) --.      |          |  yyyy = measured offset,
+||                                \     |          |  zzzz = estimated error.
+||                                 |    |           \
 MS Name/IP address         Stratum Poll Reach LastRx Last sample               
 ===============================================================================
-^* 100.100.61.88                 1  10   377   649    -44us[  -57us] +/-   11ms
-^? 120.25.115.20                 0   9     0     -     +0ns[   +0ns] +/-    0ns
-^? 203.107.6.88                  0   9     0     -     +0ns[   +0ns] +/-    0ns
-^? 106.55.184.199                0   9     0     -     +0ns[   +0ns] +/-    0ns
+^* 100.100.61.88                 1   6   377    58    -19us[-8866ns] +/-   11ms
+^? 120.25.115.20                 0   7     0     -     +0ns[   +0ns] +/-    0ns
+^? 203.107.6.88                  0   7     0     -     +0ns[   +0ns] +/-    0ns
+=+ 10.116.1.30                   2   6   377    69    +70us[  +70us] +/-   11ms
+
+  .-- Source mode  '^' = server, '=' = peer, '#' = local clock.
+ / .- Source state '*' = current best, '+' = combined, '-' = not combined,
+| /             'x' = may be in error, '~' = too variable, '?' = unusable.
+||                                                 .- xxxx [ yyyy ] +/- zzzz
+||      Reachability register (octal) -.           |  xxxx = adjusted offset,
+||      Log2(Polling interval) --.      |          |  yyyy = measured offset,
+||                                \     |          |  zzzz = estimated error.
+||                                 |    |           \
+MS Name/IP address         Stratum Poll Reach LastRx Last sample               
+===============================================================================
+^* 100.100.61.88                 1   6   377    15    +92us[-3285ns] +/-   11ms
+^? 120.25.115.20                 0   7     0     -     +0ns[   +0ns] +/-    0ns
+^? 203.107.6.88                  0   7     0     -     +0ns[   +0ns] +/-    0ns
+=+ 10.116.0.30                   2   6   177    45    -36us[ -116us] +/-   11ms
 ```
+
 参数说明
 __第一列 (MS)：__
 - ^：服务器
