@@ -228,6 +228,7 @@ System clock synchronized: yes
 ```
 #### 网络设备配置NTP服务器
 ntp server 192.168.0.30 source Loopback 0 prefer
+
 ntp server 192.168.1.30 source Loopback 0
 #### NTP服务器检查状态
 chronyc sources -v：检查上游服务器状态（合并展示主备NTP服务器的结果）
