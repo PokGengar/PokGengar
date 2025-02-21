@@ -21,10 +21,20 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        target: 'http://30.118.110.15:3000',
+        changeOrigin: true
+      },
+      '/*.do': {
+        target: 'http://30.118.110.15:3000',
+        changeOrigin: true
+      },
+      '/ssh': {
+        target: 'ws://30.118.110.15:3000',
+        ws: true,
+        changeOrigin: true
       }
     }
   }
 })
+
+

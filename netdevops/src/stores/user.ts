@@ -1,24 +1,39 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-export const useUserStore = defineStore('user', () => {
-  const token = ref(localStorage.getItem('token') || '')
-  const username = ref('admin')
+interface UserInfo {
+  username: string
+  [key: string]: any
+}
 
-  function setToken(newToken: string) {
+export const useUserStore = defineStore('user', () => {
+  const token = ref('')
+  const username = ref('')
+  const userInfo = ref<UserInfo | null>(null)
+
+  const setToken = (newToken: string) => {
     token.value = newToken
     localStorage.setItem('token', newToken)
     // 保存登录时间
     localStorage.setItem('loginTime', Date.now().toString())
   }
 
-  function clearToken() {
-    token.value = ''
-    localStorage.removeItem('token')
-    localStorage.removeItem('loginTime')
+  const setUserInfo = (info: UserInfo) => {
+    userInfo.value = info
+    username.value = info.username
+    localStorage.setItem('userInfo', JSON.stringify(info))
   }
 
-  function checkTokenExpired(): boolean {
+  const clearToken = () => {
+    token.value = ''
+    username.value = ''
+    userInfo.value = null
+    localStorage.removeItem('token')
+    localStorage.removeItem('loginTime')
+    localStorage.removeItem('userInfo')
+  }
+
+  const checkTokenExpired = () => {
     const loginTime = localStorage.getItem('loginTime')
     if (!loginTime) return true
 
@@ -31,7 +46,9 @@ export const useUserStore = defineStore('user', () => {
   return {
     token,
     username,
+    userInfo,
     setToken,
+    setUserInfo,
     clearToken,
     checkTokenExpired
   }
