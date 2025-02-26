@@ -448,7 +448,69 @@ router.get('/devices/export', async (req, res) => {
   }
 })
 
-// 更新设备信息
+// 批量更新设备
+router.put('/devices/batch', async (req, res) => {
+  const connection = await pool.getConnection()
+  try {
+    const { deviceIds, region, description } = req.body
+    console.log('批量更新设备:', { deviceIds, region, description })
+    
+    if (!region && description === undefined) {
+      return res.status(400).json({ error: '至少需要提供一个要更新的字段' })
+    }
+
+    await connection.beginTransaction()
+    
+    const updateFields = []
+    const params = []
+    
+    if (region) {
+      updateFields.push('region = ?')
+      params.push(region)
+    }
+    if (description !== undefined) {
+      updateFields.push('description = ?')
+      params.push(description)
+    }
+    
+    // 检查是否有设备ID
+    if (!Array.isArray(deviceIds) || deviceIds.length === 0) {
+      throw new Error('设备ID列表不能为空')
+    }
+
+    // 构建 IN 子句的占位符
+    const placeholders = deviceIds.map(() => '?').join(',')
+    
+    // 构建SQL语句
+    const sql = `UPDATE network_devices SET ${updateFields.join(', ')} WHERE id IN (${placeholders})`
+    
+    // 将deviceIds数组展开添加到params中
+    params.push(...deviceIds)
+    
+    console.log('批量更新SQL:', sql)
+    console.log('参数:', params)
+    
+    const [result] = await connection.query(sql, params)
+    
+    if (result.affectedRows === 0) {
+      throw new Error('未找到要更新的设备')
+    }
+    
+    await connection.commit()
+    res.json({ 
+      message: '更新成功',
+      affectedRows: result.affectedRows
+    })
+  } catch (error) {
+    await connection.rollback()
+    console.error('批量更新设备失败:', error)
+    res.status(500).json({ error: error.message })
+  } finally {
+    connection.release()
+  }
+})
+
+// 更新单个设备信息
 router.put('/devices/:id', async (req, res) => {
   try {
     const { hostname, ip_address, region, username, password, description } = req.body

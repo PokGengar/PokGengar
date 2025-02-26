@@ -1,11 +1,56 @@
 <template>
   <div class="devices-container">
     <div class="header">
-      <h2>设备列表</h2>
+      <h2>网络设备列表</h2>
       <div class="header-actions">
         <el-button type="primary" @click="showAddDialog">新增设备</el-button>
         <el-button type="success" @click="handleBatchImport">批量导入</el-button>
+        <el-button type="warning" @click="showBatchEditDialog" :disabled="!selectedDevices.length">
+          批量编辑
+        </el-button>
       </div>
+    </div>
+
+    <!-- 搜索框 -->
+    <div class="search-container">
+      <el-row :gutter="20">
+        <el-col :span="5">
+          <el-input
+            v-model="searchForm.hostname"
+            placeholder="请输入设备主机名"
+            clearable
+          />
+        </el-col>
+        <el-col :span="5">
+          <el-input
+            v-model="searchForm.ip"
+            placeholder="请输入设备IP"
+            clearable
+          />
+        </el-col>
+        <el-col :span="5">
+          <el-input
+            v-model="searchForm.description"
+            placeholder="请输入描述"
+            clearable
+          />
+        </el-col>
+        <el-col :span="5">
+          <el-select 
+            v-model="searchForm.status" 
+            placeholder="请选择状态" 
+            clearable 
+            style="width: 100%"
+          >
+            <el-option label="在线" value="online" />
+            <el-option label="离线" value="offline" />
+          </el-select>
+        </el-col>
+        <el-col :span="4">
+          <el-button type="primary" @click="handleSearch">搜索</el-button>
+          <el-button @click="resetSearch">重置</el-button>
+        </el-col>
+      </el-row>
     </div>
 
     <!-- 设备列表表格 -->
@@ -14,7 +59,9 @@
       :data="devices"
       style="width: 100%"
       border
+      @selection-change="handleSelectionChange"
     >
+      <el-table-column type="selection" width="55" />
       <el-table-column prop="hostname" label="设备主机名" min-width="180" />
       <el-table-column prop="ip_address" label="设备IP" min-width="150" />
       <el-table-column prop="region" label="地区" min-width="120" />
@@ -51,9 +98,9 @@
       <el-pagination
         v-model:current-page="currentPage"
         v-model:page-size="pageSize"
-        :total="total"
         :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
         @size-change="handleSizeChange"
         @current-change="handleCurrentChange"
       />
@@ -122,6 +169,34 @@
         </template>
       </el-upload>
     </el-dialog>
+
+    <!-- 批量编辑对话框 -->
+    <el-dialog
+      v-model="batchEditDialogVisible"
+      title="批量编辑设备"
+      width="500px"
+    >
+      <el-form
+        ref="batchFormRef"
+        :model="batchForm"
+        label-width="100px"
+      >
+        <el-form-item label="地区">
+          <el-input v-model="batchForm.region" placeholder="请输入地区" />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input
+            v-model="batchForm.description"
+            type="textarea"
+            placeholder="请输入描述信息"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="batchEditDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleBatchSubmit">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -150,12 +225,18 @@ const moduleId = route.params.moduleId as string
 const loading = ref(false)
 const devices = ref<Device[]>([])
 const currentPage = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(20)
 const total = ref(0)
 const dialogVisible = ref(false)
 const importDialogVisible = ref(false)
 const isEdit = ref(false)
 const formRef = ref<FormInstance>()
+const searchForm = ref({
+  hostname: '',
+  ip: '',
+  description: '',
+  status: ''
+})
 
 const form = ref<{
   id: number
@@ -195,6 +276,14 @@ const rules = {
   ]
 }
 
+// 添加新的响应式变量
+const selectedDevices = ref<Device[]>([])
+const batchEditDialogVisible = ref(false)
+const batchForm = ref({
+  region: '',
+  description: ''
+})
+
 // 获取设备列表
 const fetchDevices = async (params = {}) => {
   try {
@@ -204,6 +293,8 @@ const fetchDevices = async (params = {}) => {
         moduleId: moduleId,
         page: currentPage.value,
         size: pageSize.value,
+        ...searchForm.value,
+        description: searchForm.value.description, // 确保描述字段被包含在请求参数中
         ...params
       }
     })
@@ -300,6 +391,7 @@ const handleUploadError = (error: any) => {
 // 处理分页大小变化
 const handleSizeChange = (val: number) => {
   pageSize.value = val
+  currentPage.value = 1
   fetchDevices()
 }
 
@@ -307,6 +399,61 @@ const handleSizeChange = (val: number) => {
 const handleCurrentChange = (val: number) => {
   currentPage.value = val
   fetchDevices()
+}
+
+// 处理搜索
+const handleSearch = () => {
+  currentPage.value = 1
+  fetchDevices()
+}
+
+// 重置搜索
+const resetSearch = () => {
+  searchForm.value = {
+    hostname: '',
+    ip: '',
+    description: '',
+    status: ''
+  }
+  currentPage.value = 1
+  fetchDevices()
+}
+
+// 处理选择变化
+const handleSelectionChange = (selection: Device[]) => {
+  selectedDevices.value = selection
+}
+
+// 显示批量编辑对话框
+const showBatchEditDialog = () => {
+  if (selectedDevices.value.length === 0) {
+    ElMessage.warning('请至少选择一个设备')
+    return
+  }
+  batchForm.value = {
+    region: '',
+    description: ''
+  }
+  batchEditDialogVisible.value = true
+}
+
+// 处理批量编辑提交
+const handleBatchSubmit = async () => {
+  try {
+    const deviceIds = selectedDevices.value.map(device => device.id)
+    const params = {
+      deviceIds,
+      region: batchForm.value.region || undefined,
+      description: batchForm.value.description === '' ? '' : batchForm.value.description
+    }
+    
+    await request.put('/network/devices/batch', params)
+    ElMessage.success('批量更新成功')
+    batchEditDialogVisible.value = false
+    fetchDevices() // 刷新设备列表
+  } catch (error: any) {
+    ElMessage.error(error.message || '批量更新失败')
+  }
 }
 
 onMounted(() => {
@@ -317,6 +464,9 @@ onMounted(() => {
 <style scoped>
 .devices-container {
   padding: 20px;
+  height: calc(100vh - 120px);  /* 减去头部和其他边距的高度 */
+  display: flex;
+  flex-direction: column;
 }
 
 .header {
@@ -324,6 +474,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  flex-shrink: 0;  /* 防止头部被压缩 */
 }
 
 .header-actions {
@@ -331,13 +482,31 @@ onMounted(() => {
   gap: 10px;
 }
 
+/* 表格容器 */
+.el-table {
+  flex: 1;
+  overflow-y: auto;  /* 添加垂直滚动条 */
+}
+
+/* 分页容器 */
 .pagination {
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
+  padding: 10px 0;
+  flex-shrink: 0;  /* 防止分页被压缩 */
+  background-color: #fff;  /* 确保底部背景色 */
 }
 
 .upload-demo {
   text-align: center;
+}
+
+.search-container {
+  margin-bottom: 20px;
+}
+
+.search-input {
+  width: 400px;
 }
 </style> 

@@ -50,14 +50,6 @@
           <el-menu-item index="/index/user">登录管理</el-menu-item>
           <el-menu-item index="/index/user/permission">权限管理</el-menu-item>
         </el-sub-menu>
-        <el-sub-menu index="/index/aaa">
-          <template #title>
-            <el-icon><Setting /></el-icon>
-            <span>AAA管理</span>
-          </template>
-          <el-menu-item index="/index/aaa/server">AAA服务器</el-menu-item>
-          <el-menu-item index="/index/aaa/log">AAA日志</el-menu-item>
-        </el-sub-menu>
         <el-sub-menu index="/index/change">
           <template #title>
             <el-icon><Operation /></el-icon>

@@ -60,25 +60,6 @@ const routes: RouteRecordRaw[] = [
           }
         ]
       },
-      {
-        path: 'aaa',
-        component: () => import('../views/aaa/index.vue'),
-        meta: { requiresAuth: true },
-        children: [
-          {
-            path: '',
-            name: 'AAAHome',
-            component: () => import('../views/aaa/home.vue'),
-            meta: { requiresAuth: true }
-          },
-          {
-            path: 'log',
-            name: 'AAALog',
-            component: () => import('../views/aaa/log.vue'),
-            meta: { requiresAuth: true }
-          }
-        ]
-      },
       // 添加资产管理路由
       {
         path: 'asset',

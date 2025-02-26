@@ -3,13 +3,48 @@
     <el-card class="box-card">
       <template #header>
         <div class="card-header">
-          <span>服务器管理</span>
+          <h2>服务器列表</h2>
           <div class="header-buttons">
             <el-button type="primary" @click="handleRefreshStatus">刷新状态</el-button>
             <el-button type="primary" @click="handleAdd">新增服务器</el-button>
           </div>
         </div>
       </template>
+      
+      <!-- 搜索框 -->
+      <div class="search-container">
+        <el-row :gutter="20">
+          <el-col :span="6">
+            <el-input
+              v-model="searchForm.ip"
+              placeholder="请输入服务器IP"
+              clearable
+            />
+          </el-col>
+          <el-col :span="6">
+            <el-input
+              v-model="searchForm.region"
+              placeholder="请输入地区"
+              clearable
+            />
+          </el-col>
+          <el-col :span="6">
+            <el-select 
+              v-model="searchForm.status" 
+              placeholder="请选择状态" 
+              clearable 
+              style="width: 100%"
+            >
+              <el-option label="在线" value="online" />
+              <el-option label="离线" value="offline" />
+            </el-select>
+          </el-col>
+          <el-col :span="6">
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
+            <el-button @click="resetSearch">重置</el-button>
+          </el-col>
+        </el-row>
+      </div>
       
       <el-table :data="servers" style="width: 100%" v-loading="loading">
         <el-table-column prop="ip" label="服务器IP" />
@@ -46,6 +81,19 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- 添加分页组件 -->
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="total"
+          layout="total, sizes, prev, pager, next"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
     </el-card>
 
     <!-- 新增/编辑服务器对话框 -->
@@ -116,6 +164,7 @@ interface Server {
   username: string
   password: string
   status: string
+  last_online: string | null
   showPassword?: boolean
   decryptedPassword?: string
 }
@@ -126,6 +175,12 @@ interface VerifyResponse {
 
 interface DecryptResponse {
   password: string
+}
+
+interface SearchParams {
+  ip?: string
+  region?: string
+  status?: string
 }
 
 const loading = ref(false)
@@ -163,23 +218,95 @@ const rules: FormRules = {
   ]
 }
 
-// 获取服务器列表
-const fetchServers = async () => {
-  loading.value = true
+const searchForm = ref({
+  ip: '',
+  region: '',
+  status: ''
+})
+
+// 添加分页相关的响应式变量
+const currentPage = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
+
+// 修改获取服务器列表函数
+const fetchServers = async (params: SearchParams = {}) => {
   try {
-    const response = await request.get<Server[]>('/asset/server')
-    console.log('服务器列表响应:', response)
-    servers.value = (Array.isArray(response) ? response : []).map((server: Server) => ({
-      ...server,
-      showPassword: false,
-      status: server.status || '离线'
-    }))
+    loading.value = true
+    const response = await request.get('/asset/server')
+    const serverList = response?.data || []
+    
+    // 在前端进行过滤
+    let filteredServers = serverList
+    
+    if (params.ip || params.region || params.status) {
+      filteredServers = serverList.filter((server: Server) => {
+        const matchIp = !params.ip || server.ip.toLowerCase().includes(params.ip.toLowerCase())
+        const matchRegion = !params.region || server.region.toLowerCase().includes(params.region.toLowerCase())
+        const matchStatus = !params.status || server.status === params.status
+        return matchIp && matchRegion && matchStatus
+      })
+    }
+    
+    // 更新总数
+    total.value = filteredServers.length
+    
+    // 计算分页
+    const start = (currentPage.value - 1) * pageSize.value
+    const end = start + pageSize.value
+    
+    // 返回当前页的数据
+    servers.value = filteredServers.slice(start, end)
   } catch (error: any) {
-    console.error('获取服务器列表错误:', error)
+    console.error('获取服务器列表失败:', error)
     ElMessage.error(error.message || '获取服务器列表失败')
+    servers.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
+}
+
+// 处理页码变化
+const handleCurrentChange = (val: number) => {
+  currentPage.value = val
+  fetchServers({
+    ip: searchForm.value.ip,
+    region: searchForm.value.region,
+    status: searchForm.value.status
+  })
+}
+
+// 处理每页显示数量变化
+const handleSizeChange = (val: number) => {
+  pageSize.value = val
+  currentPage.value = 1 // 重置到第一页
+  fetchServers({
+    ip: searchForm.value.ip,
+    region: searchForm.value.region,
+    status: searchForm.value.status
+  })
+}
+
+// 修改搜索处理函数
+const handleSearch = () => {
+  currentPage.value = 1 // 搜索时重置到第一页
+  fetchServers({
+    ip: searchForm.value.ip,
+    region: searchForm.value.region,
+    status: searchForm.value.status
+  })
+}
+
+// 修改重置搜索函数
+const resetSearch = () => {
+  searchForm.value = {
+    ip: '',
+    region: '',
+    status: ''
+  }
+  currentPage.value = 1 // 重置到第一页
+  fetchServers()
 }
 
 const handleAdd = () => {
@@ -357,7 +484,6 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
 }
 
 .header-buttons {
@@ -365,13 +491,28 @@ onMounted(() => {
   gap: 12px;
 }
 
+.search-container {
+  margin: 20px 0;
+  padding: 0 20px;
+}
+
+.search-container .el-button {
+  margin-left: 10px;
+}
+
 :deep(.el-table) {
-  width: 100%;
-  min-width: 800px;
+  margin-top: 20px;
 }
 
 .el-tag {
   min-width: 70px;
   text-align: center;
+}
+
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 20px;
 }
 </style>

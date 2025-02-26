@@ -32,7 +32,7 @@ router.get('/server', async (req, res) => {
   try {
     console.log('开始获取服务器列表')
     const [rows] = await pool.query('SELECT * FROM servers')
-    res.json(rows)
+    res.json({ data: rows })
   } catch (error) {
     console.error('获取服务器列表失败:', error)
     res.status(500).json({ error: '获取服务器列表失败' })
