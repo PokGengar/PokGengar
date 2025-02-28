@@ -11,6 +11,26 @@ export const useUserStore = defineStore('user', () => {
   const username = ref('')
   const userInfo = ref<UserInfo | null>(null)
 
+  // 初始化函数
+  const initialize = () => {
+    const storedToken = localStorage.getItem('token')
+    const storedUserInfo = localStorage.getItem('userInfo')
+    
+    if (storedToken) {
+      token.value = storedToken
+    }
+    
+    if (storedUserInfo) {
+      try {
+        const parsedUserInfo = JSON.parse(storedUserInfo)
+        userInfo.value = parsedUserInfo
+        username.value = parsedUserInfo.username
+      } catch (error) {
+        console.error('解析用户信息失败:', error)
+      }
+    }
+  }
+
   const setToken = (newToken: string) => {
     token.value = newToken
     localStorage.setItem('token', newToken)
@@ -43,6 +63,9 @@ export const useUserStore = defineStore('user', () => {
     return diff > 600000
   }
 
+  // 初始化
+  initialize()
+
   return {
     token,
     username,
@@ -50,6 +73,8 @@ export const useUserStore = defineStore('user', () => {
     setToken,
     setUserInfo,
     clearToken,
-    checkTokenExpired
+    checkTokenExpired,
+    initialize
   }
 })
+

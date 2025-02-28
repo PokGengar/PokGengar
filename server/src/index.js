@@ -14,6 +14,7 @@ import networkRoutes from './routes/network.js'
 import automationRoutes from './routes/automation.js'
 import assetRoutes from './routes/asset.js'
 import serviceRoutes from './routes/service.js'
+import deepseekRouter from './routes/deepseek.js'
 import { pool } from './db.js'
 
 const execPromise = util.promisify(exec)
@@ -53,6 +54,7 @@ app.use('/api/network', networkRoutes)
 app.use('/api/automation', automationRoutes)
 app.use('/api/asset', assetRoutes)
 app.use('/api/service', serviceRoutes)
+app.use('/api/deepseek', deepseekRouter)
 
 // 创建 HTTP 服务器
 const server = createServer(app)

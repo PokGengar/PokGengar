@@ -159,6 +159,13 @@ const routes: RouteRecordRaw[] = [
           }
         ]
       },
+      // 添加 DeepSeek 路由
+      {
+        path: 'deepseek',
+        name: 'DeepSeek',
+        component: () => import('../views/deepseek/index.vue'),
+        meta: { requiresAuth: true }
+      },
       // 添加基础服务管理路由
       {
         path: 'service',

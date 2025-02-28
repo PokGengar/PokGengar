@@ -4,62 +4,7 @@
       <div class="logo">
         <span class="logo-text">IT运维平台</span>
       </div>
-      <el-menu
-        :default-active="route.path"
-        class="sidebar-menu"
-        background-color="#1e2c3c"
-        text-color="#bfcbd9"
-        active-text-color="#409EFF"
-        :router="true"
-      >
-        <el-menu-item index="/index">
-          <el-icon><HomeFilled /></el-icon>
-          <template #title>首页</template>
-        </el-menu-item>
-        <el-sub-menu index="/index/asset">
-          <template #title>
-            <el-icon><Box /></el-icon>
-            <span>资产管理</span>
-          </template>
-          <el-menu-item index="/index/asset/network">网络设备管理</el-menu-item>
-          <el-menu-item index="/index/asset/server">服务器管理</el-menu-item>
-          <el-menu-item index="/index/asset/platform">平台管理</el-menu-item>
-          <el-menu-item index="/index/asset/line">专线管理</el-menu-item>
-        </el-sub-menu>
-        <el-sub-menu index="/index/service">
-          <template #title>
-            <el-icon><Setting /></el-icon>
-            <span>基础服务管理</span>
-          </template>
-          <el-sub-menu index="/index/service/log">
-            <template #title>日志管理</template>
-            <el-menu-item index="/index/service/log/aaa">AAA日志</el-menu-item>
-            <el-menu-item index="/index/service/log/ntp">NTP日志</el-menu-item>
-          </el-sub-menu>
-          <el-sub-menu index="/index/service/status">
-            <template #title>状态管理</template>
-            <el-menu-item index="/index/service/status/aaa">AAA状态</el-menu-item>
-            <el-menu-item index="/index/service/status/ntp">NTP状态</el-menu-item>
-          </el-sub-menu>
-        </el-sub-menu>
-        <el-sub-menu index="/index/user">
-          <template #title>
-            <el-icon><User /></el-icon>
-            <span>用户管理</span>
-          </template>
-          <el-menu-item index="/index/user">登录管理</el-menu-item>
-          <el-menu-item index="/index/user/permission">权限管理</el-menu-item>
-        </el-sub-menu>
-        <el-sub-menu index="/index/change">
-          <template #title>
-            <el-icon><Operation /></el-icon>
-            <span>变更中心</span>
-          </template>
-          <el-menu-item index="/index/change/automation">自动化配置</el-menu-item>
-          <el-menu-item index="/index/change/inspection">巡检</el-menu-item>
-          <el-menu-item index="/index/change/template">标准化配置模板</el-menu-item>
-        </el-sub-menu>
-      </el-menu>
+      <Sidebar />
     </div>
     <div class="main-container">
       <div class="header">
@@ -101,15 +46,7 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from "vue-router"
 import { useUserStore } from '@/stores/user'
-import { 
-  User, 
-  Setting, 
-  ArrowDown,
-  HomeFilled,
-  Monitor,
-  Operation,
-  Box
-} from "@element-plus/icons-vue"
+import Sidebar from '@/layout/components/Sidebar.vue'
 
 const route = useRoute()
 const router = useRouter()

@@ -42,9 +42,9 @@ service.interceptors.request.use(
       config.headers['Authorization'] = `Bearer ${token}`
     }
     
-    // 为执行任务接口设置更长的超时时间
-    if (config.url?.includes('/automation/execute/')) {
-      config.timeout = 120000  // 执行任务接口设置2分钟超时
+    // 为 DeepSeek API 设置更长的超时时间
+    if (config.url?.includes('/deepseek')) {
+      config.timeout = 120000  // DeepSeek API 设置2分钟超时
     }
     
     return config
