@@ -103,11 +103,10 @@ router.post('/server', async (req, res) => {
     console.log('收到的数据:', { ip, region, username })
     
     const isOnline = await pingHost(ip)
-    const encryptedPassword = encryptPassword(password)
 
     const [result] = await pool.query(
       'INSERT INTO servers (ip, region, username, password, status, last_online) VALUES (?, ?, ?, ?, ?, ?)',
-      [ip, region, username, encryptedPassword, isOnline ? 'online' : 'offline', isOnline ? new Date() : null]
+      [ip, region, username, password, isOnline ? 'online' : 'offline', isOnline ? new Date() : null]
     )
     res.json({ 
       id: result.insertId,
@@ -132,11 +131,10 @@ router.put('/server/:id', async (req, res) => {
   try {
     const { ip, region, username, password } = req.body
     const isOnline = await pingHost(ip)
-    const encryptedPassword = encryptPassword(password)
 
     await pool.query(
       'UPDATE servers SET ip = ?, region = ?, username = ?, password = ?, status = ?, last_online = ? WHERE id = ?',
-      [ip, region, username, encryptedPassword, isOnline ? 'online' : 'offline', isOnline ? new Date() : null, req.params.id]
+      [ip, region, username, password, isOnline ? 'online' : 'offline', isOnline ? new Date() : null, req.params.id]
     )
     res.json({
       id: req.params.id,

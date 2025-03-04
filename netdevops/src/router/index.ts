@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { createAsyncComponent } from '@/utils/asyncComponent'
 import type { RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 
@@ -8,11 +9,52 @@ declare module 'vue-router' {
   }
 }
 
+// 使用异步组件加载
+const AsyncLogin = createAsyncComponent(() => import('@/views/Login.vue'))
+const AsyncSSOCallback = createAsyncComponent(() => import('@/views/SSOCallback.vue'))
+const AsyncHome = createAsyncComponent(() => import('@/views/Home.vue'))
+const AsyncLayout = createAsyncComponent(() => import('@/views/Layout.vue'))
+const AsyncDeepseek = createAsyncComponent(() => import('@/views/deepseek/index.vue'))
+
+// 用户管理相关组件
+const AsyncUserIndex = createAsyncComponent(() => import('@/views/user/index.vue'))
+const AsyncUserLogin = createAsyncComponent(() => import('@/views/user/login.vue'))
+const AsyncUserPermission = createAsyncComponent(() => import('@/views/user/permission.vue'))
+
+// 资产管理相关组件
+const AsyncAssetIndex = createAsyncComponent(() => import('@/views/asset/index.vue'))
+const AsyncAssetNetwork = createAsyncComponent(() => import('@/views/asset/network/index.vue'))
+const AsyncAssetNetworkModules = createAsyncComponent(() => import('@/views/asset/network/modules.vue'))
+const AsyncAssetNetworkDevices = createAsyncComponent(() => import('@/views/asset/network/devices.vue'))
+const AsyncAssetServer = createAsyncComponent(() => import('@/views/asset/server/index.vue'))
+const AsyncAssetServerModules = createAsyncComponent(() => import('@/views/asset/server/modules.vue'))
+const AsyncAssetServerSSH = createAsyncComponent(() => import('@/views/asset/server/SSHTerminal.vue'))
+const AsyncAssetPlatform = createAsyncComponent(() => import('@/views/asset/platform.vue'))
+const AsyncAssetLine = createAsyncComponent(() => import('@/views/asset/line.vue'))
+
+// 变更中心相关组件
+const AsyncChangeIndex = createAsyncComponent(() => import('@/views/change/index.vue'))
+const AsyncChangeAutomation = createAsyncComponent(() => import('@/views/change/automation.vue'))
+const AsyncChangeInspection = createAsyncComponent(() => import('@/views/change/inspection.vue'))
+const AsyncChangeTemplate = createAsyncComponent(() => import('@/views/change/template.vue'))
+
+// 资源管理相关组件
+const AsyncResourceIndex = createAsyncComponent(() => import('@/views/resource/index.vue'))
+const AsyncResourceServer = createAsyncComponent(() => import('@/views/resource/server.vue'))
+
+// 服务管理相关组件
+const AsyncServiceIndex = createAsyncComponent(() => import('@/views/service/index.vue'))
+const AsyncServiceLog = createAsyncComponent(() => import('@/views/service/log/index.vue'))
+const AsyncServiceNTP = createAsyncComponent(() => import('@/views/service/log/ntp.vue'))
+const AsyncServiceAAA = createAsyncComponent(() => import('@/views/service/log/aaa.vue'))
+const AsyncServiceStatus = createAsyncComponent(() => import('@/views/service/status/index.vue'))
+const AsyncServiceStatusAAA = createAsyncComponent(() => import('@/views/service/status/aaa.vue'))
+
 const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('../views/Login.vue'),
+    component: AsyncLogin,
     beforeEnter: (to, from, next) => {
       const ssoLoginUrl = 'https://login.alibaba-inc.com/ssoLogin.htm'
       const appName = 'mallard'
@@ -23,7 +65,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/sendBucSSOToken.do',
     name: 'SSOCallback',
-    component: () => import('../views/SSOCallback.vue'),
+    component: AsyncSSOCallback,
     meta: { requiresAuth: false }
   },
   {
@@ -32,30 +74,30 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/index',
-    component: () => import('../views/Layout.vue'),
+    component: AsyncLayout,
     meta: { requiresAuth: true },
     children: [
       {
         path: '',
         name: 'Home',
-        component: () => import('../views/Home.vue'),
+        component: AsyncHome,
         meta: { requiresAuth: true }
       },
       {
         path: 'user',
-        component: () => import('../views/user/index.vue'),
+        component: AsyncUserIndex,
         meta: { requiresAuth: true },
         children: [
           {
             path: '',
             name: 'UserLogin',
-            component: () => import('../views/user/login.vue'),
+            component: AsyncUserLogin,
             meta: { requiresAuth: true }
           },
           {
             path: 'permission',
             name: 'UserPermission',
-            component: () => import('../views/user/permission.vue'),
+            component: AsyncUserPermission,
             meta: { requiresAuth: true }
           }
         ]
@@ -63,24 +105,24 @@ const routes: RouteRecordRaw[] = [
       // 添加资产管理路由
       {
         path: 'asset',
-        component: () => import('../views/asset/index.vue'),
+        component: AsyncAssetIndex,
         meta: { requiresAuth: true },
         children: [
           {
             path: 'network',
-            component: () => import('../views/asset/network/index.vue'),
+            component: AsyncAssetNetwork,
             meta: { requiresAuth: true },
             children: [
               {
                 path: '',
                 name: 'NetworkHome',
-                component: () => import('../views/asset/network/modules.vue'),
+                component: AsyncAssetNetworkModules,
                 meta: { requiresAuth: true }
               },
               {
                 path: 'devices/:moduleId',
                 name: 'NetworkDevices',
-                component: () => import('../views/asset/network/devices.vue'),
+                component: AsyncAssetNetworkDevices,
                 meta: { requiresAuth: true },
                 props: true
               }
@@ -89,19 +131,19 @@ const routes: RouteRecordRaw[] = [
           {
             path: 'server',
             name: 'ServerManagement',
-            component: () => import('../views/asset/server/index.vue'),
+            component: AsyncAssetServer,
             meta: { requiresAuth: true },
             children: [
               {
                 path: '',
                 name: 'ServerHome',
-                component: () => import('../views/asset/server/modules.vue'),
+                component: AsyncAssetServerModules,
                 meta: { requiresAuth: true }
               },
               {
                 path: 'ssh-terminal',
                 name: 'SSHTerminal',
-                component: () => import('../views/asset/server/SSHTerminal.vue'),
+                component: AsyncAssetServerSSH,
                 meta: { requiresAuth: true }
               }
             ]
@@ -109,13 +151,13 @@ const routes: RouteRecordRaw[] = [
           {
             path: 'platform',
             name: 'PlatformManagement',
-            component: () => import('../views/asset/platform.vue'),
+            component: AsyncAssetPlatform,
             meta: { requiresAuth: true }
           },
           {
             path: 'line',
             name: 'LineManagement',
-            component: () => import('../views/asset/line.vue'),
+            component: AsyncAssetLine,
             meta: { requiresAuth: true }
           }
         ]
@@ -123,38 +165,38 @@ const routes: RouteRecordRaw[] = [
       // 添加变更中心路由
       {
         path: 'change',
-        component: () => import('../views/change/index.vue'),
+        component: AsyncChangeIndex,
         meta: { requiresAuth: true },
         children: [
           {
             path: 'automation',
             name: 'ChangeAutomation',
-            component: () => import('../views/change/automation.vue'),
+            component: AsyncChangeAutomation,
             meta: { requiresAuth: true }
           },
           {
             path: 'inspection',
             name: 'ChangeInspection',
-            component: () => import('../views/change/inspection.vue'),
+            component: AsyncChangeInspection,
             meta: { requiresAuth: true }
           },
           {
             path: 'template',
             name: 'ChangeTemplate',
-            component: () => import('../views/change/template.vue'),
+            component: AsyncChangeTemplate,
             meta: { requiresAuth: true }
           }
         ]
       },
       {
         path: 'resource',
-        component: () => import('../views/resource/index.vue'),
+        component: AsyncResourceIndex,
         meta: { requiresAuth: true },
         children: [
           {
             path: '',
             name: 'ResourceHome',
-            component: () => import('../views/resource/server.vue'),
+            component: AsyncResourceServer,
             meta: { requiresAuth: true }
           }
         ]
@@ -163,49 +205,43 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'deepseek',
         name: 'DeepSeek',
-        component: () => import('../views/deepseek/index.vue'),
+        component: AsyncDeepseek,
         meta: { requiresAuth: true }
       },
       // 添加基础服务管理路由
       {
         path: 'service',
-        component: () => import('../views/service/index.vue'),
+        component: AsyncServiceIndex,
         meta: { requiresAuth: true },
         children: [
           {
             path: 'log',
-            component: () => import('../views/service/log/index.vue'),
+            component: AsyncServiceLog,
             meta: { requiresAuth: true },
             children: [
               {
                 path: 'aaa',
                 name: 'AAALog',
-                component: () => import('../views/service/log/aaa.vue'),
+                component: AsyncServiceAAA,
                 meta: { requiresAuth: true }
               },
               {
                 path: 'ntp',
                 name: 'NTPLog',
-                component: () => import('../views/service/log/ntp.vue'),
+                component: AsyncServiceNTP,
                 meta: { requiresAuth: true }
               }
             ]
           },
           {
             path: 'status',
-            component: () => import('../views/service/status/index.vue'),
+            component: AsyncServiceStatus,
             meta: { requiresAuth: true },
             children: [
               {
                 path: 'aaa',
                 name: 'AAAStatus',
-                component: () => import('../views/service/status/aaa.vue'),
-                meta: { requiresAuth: true }
-              },
-              {
-                path: 'ntp',
-                name: 'NTPStatus',
-                component: () => import('../views/service/status/ntp.vue'),
+                component: AsyncServiceStatusAAA,
                 meta: { requiresAuth: true }
               }
             ]

@@ -86,8 +86,8 @@ const initTerminal = () => {
     scrollback: 1000,
     convertEol: true,
     scrollOnUserInput: true,
-    cols: 120,
-    rows: 30,
+    cols: 250,
+    rows: 35,
     fontFamily: 'Menlo, Monaco, "Courier New", monospace'
   })
 
@@ -105,7 +105,7 @@ const initTerminal = () => {
     if (dims && socket?.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify({
         type: 'resize',
-        cols: dims.cols,
+        cols: Math.max(dims.cols, 250),
         rows: dims.rows
       }))
     }
@@ -219,14 +219,14 @@ onUnmounted(() => {
 }
 
 .terminal-wrapper {
-  width: 90%;
-  max-width: 1200px;
+  width: 98%;
+  max-width: 1800px;
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
   display: flex;
   flex-direction: column;
-  max-height: 90vh;
+  max-height: 98vh;
 }
 
 .terminal-header {
@@ -248,10 +248,23 @@ onUnmounted(() => {
   border-radius: 0 0 8px 8px;
   overflow: hidden;
   position: relative;
+  width: 100%;
 }
 
-/* 添加滚动条样式 */
+/* 确保终端内容在容器内正确显示 */
+.terminal-content :deep(.xterm-screen) {
+  width: 100% !important;
+  height: auto !important;
+  max-width: none !important;
+}
+
+.terminal-content :deep(.xterm-rows) {
+  width: 100% !important;
+}
+
+/* 优化滚动条样式 */
 .terminal-content :deep(.xterm-viewport) {
+  overflow-x: auto !important;
   overflow-y: scroll !important;
   scrollbar-width: thin;
   scrollbar-color: #909399 #f5f7fa;
@@ -280,11 +293,5 @@ onUnmounted(() => {
   height: 100%;
   width: 100%;
   pointer-events: auto;
-}
-
-/* 确保终端内容在容器内正确显示 */
-.terminal-content :deep(.xterm-screen) {
-  width: 100% !important;
-  height: auto !important;
 }
 </style> 

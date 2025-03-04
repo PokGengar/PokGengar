@@ -44,7 +44,7 @@ service.interceptors.request.use(
     
     // 为 DeepSeek API 设置更长的超时时间
     if (config.url?.includes('/deepseek')) {
-      config.timeout = 120000  // DeepSeek API 设置2分钟超时
+      config.timeout = 300000  // DeepSeek API 设置5分钟超时
     }
     
     return config

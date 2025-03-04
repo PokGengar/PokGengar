@@ -15,6 +15,7 @@ import automationRoutes from './routes/automation.js'
 import assetRoutes from './routes/asset.js'
 import serviceRoutes from './routes/service.js'
 import deepseekRouter from './routes/deepseek.js'
+import ntpLogsRouter from './routes/ntp-logs.js'
 import { pool } from './db.js'
 
 const execPromise = util.promisify(exec)
@@ -55,6 +56,7 @@ app.use('/api/automation', automationRoutes)
 app.use('/api/asset', assetRoutes)
 app.use('/api/service', serviceRoutes)
 app.use('/api/deepseek', deepseekRouter)
+app.use('/api/ntp-logs', ntpLogsRouter)
 
 // 创建 HTTP 服务器
 const server = createServer(app)
@@ -88,13 +90,31 @@ wss.on('connection', (ws, req) => {
         
         sshClient.on('ready', () => {
           console.log('SSH connection established successfully')
-          sshClient.shell((err, stream) => {
+          sshClient.shell({
+            term: 'xterm-256color',
+            cols: 500,
+            rows: 35
+          }, (err, stream) => {
             if (err) {
               console.error('Shell error:', err)
               ws.send('\r\n*** SSH Shell 错误: ' + err.message + '\r\n')
               return
             }
             console.log('Shell session created')
+
+            // 处理终端大小调整
+            ws.on('message', (message) => {
+              try {
+                const data = JSON.parse(message.toString())
+                if (data.type === 'resize') {
+                  stream.setWindow(data.rows, Math.max(data.cols, 500))
+                } else if (data.type === 'data') {
+                  stream.write(data.data)
+                }
+              } catch (e) {
+                console.error('Error handling terminal input:', e)
+              }
+            })
 
             stream.on('data', (data) => {
               try {
@@ -112,18 +132,6 @@ wss.on('connection', (ws, req) => {
             stream.on('error', (err) => {
               console.error('SSH stream error:', err)
               ws.send('\r\n*** SSH Stream 错误:' + err.message + '\r\n')
-            })
-
-            // 处理终端输入
-            ws.on('message', (message) => {
-              try {
-                const data = JSON.parse(message.toString())
-                if (data.type === 'data') {
-                  stream.write(data.data)
-                }
-              } catch (e) {
-                console.error('Error handling terminal input:', e)
-              }
             })
           })
         })
